@@ -9,7 +9,7 @@
  사용 기술
 - 회로 시뮬레이션: PSPICE, LTSPICE
 - PCB 설계: PADS, 4-layer 설계
-- FPGA/HDL*: Verilog, Vivado (UART, RAMP, ADC 제어 모듈 구현)
+- FPGA/HDL: Verilog, Vivado (UART, RAMP, ADC 제어 모듈 구현)
 - 데이터 처리: Python (Moving Average, EWMA 필터 적용)
 
 
@@ -26,10 +26,11 @@
 
 
 자료 링크
-- [논문 PDF](docs/한국정보기술학회_논문.pdf)  
-- [최종 포스터 PDF](docs/포스터_신화윤_최종.pdf)  
-- [발표자료 PPT](docs/전기화학센서_리드아웃회로정리.pptx)  
-- [Verilog 코드](vivado code/)  
+- [논문 PDF](한국정보기술학회_논문.pdf)  
+- [최종 포스터 PDF](포스터_신화윤_최종.pdf)  
+- [발표자료 PPT](전기화학센서_리드아웃회로정리.pptx)  
+- [Verilog 코드](vivado code/)
+- [python 코드]
 
 
 
