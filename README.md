@@ -30,11 +30,9 @@
 - [논문 PDF](docs/kics_paper.pdf)  
 - [최종 포스터 PDF](docs/final_poster.pdf)  
 - [발표자료 PPT](docs/readout_circuit_presentation.pdf)  
-- [Verilog 코드](vivado_code/test_CMOD_UART FINAL0509.py)  
-- [Python 코드](python_code/)  
 
 
 📬 Contact
 
-- GitHub: [저장소 바로가기](https://github.com/wayoon-03/-/tree/main)
+- GitHub: [코드 저장소 바로가기](https://github.com/wayoon-03/-/tree/main)
 
