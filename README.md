@@ -29,7 +29,7 @@
  📎 자료 링크
 - [논문 PDF](docs/kics_paper.pdf)  
 - [최종 포스터 PDF](docs/final_poster.pdf)  
-- [발표자료 PPT](docs/readout_circuit_presentation.pptx)  
+- [발표자료 PPT](docs/readout_circuit_presentation.pdf)  
 - [Verilog 코드](vivado_code/)  
 - [Python 코드](python_code/)  
 
