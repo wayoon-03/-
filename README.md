@@ -21,7 +21,7 @@
 
 📂 Repository Structure
 - `vivado code/` : Verilog 소스코드,
-- 'Python code/' 데이터 처리 코드
+- `python code/` 데이터 처리 코드
 - `docs/` : 논문 PDF, 포스터, 발표 자료
 - `pcb/` : PADS PCB 설계 파일
 
