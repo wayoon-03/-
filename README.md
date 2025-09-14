@@ -20,7 +20,8 @@
 
 
 📂 Repository Structure
-- `code/` : Verilog 소스코드, Python 데이터 처리 코드
+- `vivado code/` : Verilog 소스코드,
+- 'Python code/' 데이터 처리 코드
 - `docs/` : 논문 PDF, 포스터, 발표 자료
 - `pcb/` : PADS PCB 설계 파일
 
@@ -30,7 +31,7 @@
 - [최종 포스터 PDF](포스터_신화윤_최종.pdf)  
 - [발표자료 PPT](전기화학센서_리드아웃회로정리.pptx)  
 - [Verilog 코드](vivado code/)
-- [python 코드]
+- [python 코드] (python code/)
 
 
 
