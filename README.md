@@ -26,12 +26,13 @@
 - `pcb/` : PADS PCB 설계 파일
 
 
-📎 자료 링크
+ 📎 자료 링크
 - [논문 PDF](docs/한국정보기술학회_논문.pdf)  
 - [최종 포스터 PDF](docs/포스터_신화윤_최종.pdf)  
-- [발표자료 PPT](docs/전기화학센서_리드아웃회로정리.pptx)  
-- [Verilog 코드](vivado_code/)  
-- [Python 코드](python_code/)  
+- [발표자료 PPT](docs/전기화학센서_리드아웃회로_정리.pptx)  
+- [Verilog 코드](vivado%20code/)  
+- [Python 코드](python%20code/)  
+
 
 
 
