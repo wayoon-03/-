@@ -27,9 +27,9 @@
 
 
 자료 링크
-- [논문 PDF](한국정보기술학회_논문.pdf)  
+- [논문 PDF]([한국정보기술학회] 논문.pdf)  
 - [최종 포스터 PDF](포스터_신화윤_최종.pdf)  
-- [발표자료 PPT](전기화학센서_리드아웃회로정리.pptx)  
+- [발표자료 PPT](전기화학센서 리드아웃 회로 정리.pptx)  
 - [Verilog 코드](vivado code/)
 - [python 코드] (python code/)
 
