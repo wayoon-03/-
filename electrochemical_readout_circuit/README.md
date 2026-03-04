@@ -38,21 +38,16 @@
 
 ---
 
-### Repository Structure
-- electrochemical_readout_circuit/
-- Vivado/   : Verilog source code
-- python/   : 데이터 처리 및 신호 필터링 코드
-- pcb/      : PADS PCB 설계 파일
-- docs/     : 논문, 포스터, 발표자료
+### 📂 Repository Structure
+
+-  [Vivado](./vivado/) : Verilog source code
+-  [python](./python/) : 데이터 처리 및 신호 필터링 코드
+-  [pcb](./pcb/) : PADS PCB 설계 파일
+-  [docs](./docs/) : 논문, 포스터, 발표자료
 
 ---
 
-### 자료 링크
-- [논문 PDF](docs/kics_paper.pdf)
-- [최종 포스터 PDF](docs/final_poster.pdf)
-- [발표자료 PPT](docs/readout_circuit_presentation.pdf)
 
----
 
 ### Project Repository
 [electrochemical_readout_circuit](electrochemical_readout_circuit/)
