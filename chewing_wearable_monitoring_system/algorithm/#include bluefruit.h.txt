@@ -1,0 +1,316 @@
+#include <bluefruit.h>
+#include <Arduino.h>
+
+/* ============================================
+ * 전도성 고무줄 저작 검출 (nRF52840)
+ * - 10 kΩ 분압 + 12-bit ADC + 8-sample 평균
+ * - EMA diff(emaFast-emaSlow) 기반 감지
+ * - AutoCal: sd기반 + Idle R 비율(%) 바닥값
+ * - 피크 히스토리 2-군집으로 동적 Heavy 경계(TH_H_dyn)
+ * - BLE Custom UUID Notify/Write + MAC-suffix 이름
+ * ============================================ */
+
+// ===== 센서/하드웨어 =====
+const int   sensorPin2    = A2;
+const float fixedResistor = 6800.0f; // 6.8 kΩ
+const float supplyVoltage = 3.3f;    // 고정 전압
+
+// ===== EMA 필터 =====
+float emaFast = 0.0f, emaSlow = 0.0f;
+const float alphaFast = 0.85f; // 빠른 추종 (조금 민감)
+const float alphaSlow = 0.2f;  // 느린 추세
+bool  emaSeeded = false;
+
+// ===== 카운트/상태 =====
+int      chewCount    = 0;
+bool     chewing      = false;
+uint32_t lastChewMs   = 0;
+uint32_t lastStartMs  = 0;
+uint32_t lastInterval = 400; // ms, 초기 추정
+
+// ===== 트리거/홀드 =====
+const float    MINSLOPE_ON = 0.8f; // 루프 10ms 기준
+const uint16_t HOLD_MS     = 60;   // 민감하게 (기존 80)
+const uint16_t OFF_HOLD_MS = 150;
+
+// ----- 초기 안정화 -----
+const uint32_t WARMUP_MS  = 5000; // 5s 워밍업
+const uint32_t AUTOCAL_MS = 3000; // 3s 오토캘리브레이션
+uint32_t warmupEndMs      = 0;
+
+// ===== 불응기 계산 =====
+uint16_t refractoryDynamic(uint32_t intervalMs) {
+  uint32_t base = (intervalMs * 45) / 100;
+  if (base < 180) base = 180;
+  if (base > 500) base = 500;
+  return (uint16_t) base;
+}
+
+// ===== AutoCal 파라미터 =====
+const float THRESH_ON_L_SD_MULT = 3.0f;
+const float THRESH_ON_H_SD_MULT = 5.0f;
+const float THRESH_OFF_SD_MULT  = 1.2f;
+
+// 동적 임계 최소 하한(Ω)
+float TH_ON_L = 35.0f, TH_ON_H = 80.0f, TH_OFF = 12.0f;
+
+// AutoCal 누적
+bool     autoCalDone = false;
+uint32_t calStartMs  = 0;
+float    calSumDiff = 0.0f, calSumDiff2 = 0.0f;
+float    calSumR    = 0.0f;
+uint16_t calN       = 0;
+
+// ===== 센서값 가드(이상치 클리핑) =====
+const float R_CLIP_MIN = 24500.0f; // 21 kΩ
+const float R_CLIP_MAX = 50000.0f; // 50 kΩ (조정됨)
+
+// ===== 12-bit + 오버샘플링 =====
+static inline int readADC12(int pin) {
+  const int N = 8;
+  long s = 0;
+  for (int i = 0; i < N; ++i) s += analogRead(pin);
+  return (int)(s / N); // 0..4095
+}
+
+// ===== 피크 히스토리 기반 동적 Heavy 경계 =====
+const int   PEAK_BUF_SIZE   = 24;
+const int   PEAKS_MIN_TRAIN = 8;
+float peakBuf[PEAK_BUF_SIZE];
+int   peakCount = 0;
+int   peakHead  = 0;
+bool  peakReady = false;
+
+bool  hasTH_H_dyn = false;
+float TH_H_dyn    = 0.0f;
+
+void peakPush(float v) {
+  peakBuf[peakHead] = v;
+  peakHead = (peakHead + 1) % PEAK_BUF_SIZE;
+  if (peakCount < PEAK_BUF_SIZE) peakCount++;
+  if (peakCount >= PEAKS_MIN_TRAIN) peakReady = true;
+}
+
+void recomputeDynamicHeavyBoundary() {
+  if (!peakReady) { hasTH_H_dyn = false; return; }
+
+  float minv = 1e9f, maxv = -1e9f;
+  for (int i = 0; i < peakCount; ++i) {
+    float x = peakBuf[i];
+    if (x < minv) minv = x;
+    if (x > maxv) maxv = x;
+  }
+  if (maxv - minv < 1.0f) { hasTH_H_dyn = false; return; }
+
+  float c1 = minv, c2 = maxv;
+  for (int it = 0; it < 10; it++) {
+    float sum1 = 0, sum2 = 0; int n1 = 0, n2 = 0;
+    for (int i = 0; i < peakCount; i++) {
+      float x = peakBuf[i];
+      if (fabsf(x - c1) <= fabsf(x - c2)) { sum1 += x; n1++; }
+      else { sum2 += x; n2++; }
+    }
+    if (n1 > 0) c1 = sum1 / n1;
+    if (n2 > 0) c2 = sum2 / n2;
+  }
+
+  float boundary = (c1 + c2) * 0.5f;
+  TH_H_dyn = (boundary > TH_ON_H) ? boundary : TH_ON_H;
+  hasTH_H_dyn = true;
+
+  Serial.print(F("[KMEANS] c1=")); Serial.print(c1,1);
+  Serial.print(F(", c2="));        Serial.print(c2,1);
+  Serial.print(F(", boundary="));  Serial.print(boundary,1);
+  Serial.print(F(", TH_H_dyn="));  Serial.println(TH_H_dyn,1);
+}
+
+// ===== BLE UUID =====
+const char* UUID_SVC = "C0DE0001-7AEE-4E0A-B1B4-9C6B8E2D3A01";
+const char* UUID_TX  = "C0DE0002-7AEE-4E0A-B1B4-9C6B8E2D3A01";
+const char* UUID_RX  = "C0DE0003-7AEE-4E0A-B1B4-9C6B8E2D3A01";
+
+BLEService        chewSvc(UUID_SVC);
+BLECharacteristic chTx(UUID_TX);
+BLECharacteristic chRx(UUID_RX);
+
+void connect_callback(uint16_t) {}
+void disconnect_callback(uint16_t, uint8_t) {}
+
+void bleNotifyLine(const String& s) {
+  if (!Bluefruit.connected()) return;
+  const size_t maxlen = 244;
+  size_t len = s.length(), sent = 0;
+  while (sent < len) {
+    size_t n = min(maxlen, len - sent);
+    chTx.notify((const uint8_t*)(s.c_str() + sent), n);
+    sent += n; delay(1);
+  }
+  const char nl = '\n';
+  chTx.notify((const uint8_t*)&nl, 1);
+}
+
+// ===== AutoCal =====
+void startAutoCal() {
+  calStartMs  = millis();
+  calSumDiff  = 0.0f;
+  calSumDiff2 = 0.0f;
+  calSumR     = 0.0f;
+  calN        = 0;
+  autoCalDone = false;
+}
+
+void applyAutoCal() {
+  if (calN < 20) { autoCalDone = true; return; }
+
+  float meanDiff = calSumDiff / calN;
+  float varDiff  = max(1e-6f, calSumDiff2 / calN - meanDiff * meanDiff);
+  float sdDiff   = sqrtf(varDiff);
+  float meanR    = calSumR / calN;
+
+  float floor_L = 0.005f  * meanR;
+  float floor_H = 0.012f  * meanR;
+  float floor_O = 0.0025f * meanR;
+
+  TH_ON_L = max(60.0f, max(meanDiff + THRESH_ON_L_SD_MULT * sdDiff, floor_L));
+  TH_ON_H = max(80.0f, max(meanDiff + THRESH_ON_H_SD_MULT * sdDiff, floor_H));
+  TH_OFF  = max(12.0f, max(meanDiff + THRESH_OFF_SD_MULT  * sdDiff, floor_O));
+
+  hasTH_H_dyn = false;
+  autoCalDone = true;
+
+  Serial.print(F("[CAL] meanR=")); Serial.print(meanR,1);
+  Serial.print(F(", meanDiff=")); Serial.print(meanDiff,1);
+  Serial.print(F(", sdDiff=")); Serial.print(sdDiff,1);
+  Serial.print(F(" -> TH_L=")); Serial.print(TH_ON_L,0);
+  Serial.print(F(", TH_H=")); Serial.print(TH_ON_H,0);
+  Serial.print(F(", TH_OFF=")); Serial.println(TH_OFF,0);
+}
+
+// ===== 디버그 =====
+#define DEBUG_WAVE 1
+
+void setup() {
+  Serial.begin(115200);
+  uint32_t t0 = millis();
+  while(!Serial && (millis()-t0<1000)) {}
+
+  analogReadResolution(12);
+
+  Bluefruit.begin();
+  uint8_t mac[6]; Bluefruit.getAddr(mac);
+  char devName[32];
+  snprintf(devName,sizeof(devName),"Eatsense_Chewing_%02X%02X",mac[1],mac[0]);
+  Bluefruit.setName(devName);
+  Bluefruit.configPrphBandwidth(BANDWIDTH_MAX);
+  Bluefruit.setTxPower(4);
+  Bluefruit.Periph.setConnectCallback(connect_callback);
+  Bluefruit.Periph.setDisconnectCallback(disconnect_callback);
+  Bluefruit.Periph.setConnInterval(9,12);
+
+  chewSvc.begin();
+  chTx.setProperties(CHR_PROPS_NOTIFY);
+  chTx.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
+  chTx.setMaxLen(244);
+  chTx.begin();
+  chRx.setProperties(CHR_PROPS_WRITE | CHR_PROPS_WRITE_WO_RESP);
+  chRx.setPermission(SECMODE_OPEN, SECMODE_OPEN);
+  chRx.setMaxLen(244);
+  chRx.setWriteCallback([](uint16_t, BLECharacteristic*, uint8_t* d, uint16_t l){
+    if (l>=3 && d[0]=='C' && d[1]=='A' && d[2]=='L'){
+      startAutoCal(); bleNotifyLine("OK,CALIBRATING");
+    }
+  });
+  chRx.begin();
+
+  Bluefruit.Advertising.addFlags(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
+  Bluefruit.Advertising.addTxPower();
+  Bluefruit.Advertising.addService(chewSvc);
+  Bluefruit.Advertising.addName();
+  Bluefruit.Advertising.restartOnDisconnect(true);
+  Bluefruit.Advertising.setInterval(32,244);
+  Bluefruit.Advertising.setFastTimeout(30);
+  Bluefruit.Advertising.start(0);
+
+  warmupEndMs = millis()+WARMUP_MS;
+  Serial.print(F("[INIT] Device Name: ")); Serial.println(devName);
+  Serial.println(F("[INIT] Warmup 5s -> AutoCal 3s"));
+}
+
+void loop() {
+  const uint32_t now=millis();
+  int adc = readADC12(sensorPin2);
+  float voltage2 = adc*(supplyVoltage/4095.0f);
+  float resistance2 = (voltage2*fixedResistor)/max(0.0001f,(supplyVoltage-voltage2));
+  resistance2 = constrain(resistance2,R_CLIP_MIN,R_CLIP_MAX);
+
+  float prevFast = emaFast;
+  if(!emaSeeded){ emaFast=emaSlow=resistance2; emaSeeded=true; }
+  else{
+      emaFast = alphaFast*resistance2 + (1-alphaFast)*emaFast;
+      emaSlow = alphaSlow*resistance2 + (1-alphaSlow)*emaSlow;
+  }
+  float diff = emaFast-emaSlow;
+  float slope = emaFast-prevFast;
+
+  // --- 워밍업 ---
+  if(now<warmupEndMs){ delay(10); return; }
+
+  // --- AutoCal ---
+  if(!autoCalDone){
+      if(calStartMs==0) startAutoCal();
+      if(now-calStartMs<AUTOCAL_MS){
+          calSumDiff += diff;
+          calSumDiff2 += diff*diff;
+          calSumR += emaSlow;
+          calN++; delay(10); return;
+      } else applyAutoCal();
+  }
+
+  // --- 트리거 후보 ---
+  static bool candidate=false;
+  static uint32_t offBelowSince=0;
+  static float currentPeak=0.0f;
+
+  if(!chewing && !candidate && diff>TH_ON_L && slope>MINSLOPE_ON){
+      candidate=true; lastStartMs=now; currentPeak=diff;
+  }
+  if(candidate){ if(diff>currentPeak) currentPeak=diff; }
+
+  // --- 홀드 후 확정 + 불응기 ---
+  if(candidate && (now-lastStartMs>=HOLD_MS)){
+      uint16_t refract = refractoryDynamic(lastInterval);
+      if((now-lastChewMs)>refract){
+          chewing=true; candidate=false;
+          lastInterval=(lastChewMs==0)? lastInterval : (now-lastChewMs);
+          lastChewMs=now;
+          chewCount++;
+          peakPush(currentPeak);
+          recomputeDynamicHeavyBoundary();
+          float heavyBoundary = hasTH_H_dyn? TH_H_dyn:TH_ON_H;
+          char chewLevel=(currentPeak>heavyBoundary)?'H':'L';
+          String eventStr="EVT,CHEW_"; eventStr+=chewLevel;
+          eventStr+= ","; eventStr+=String(chewCount);
+          eventStr+= ",PEAK="; eventStr+=String(currentPeak,0);
+          Serial.println(eventStr);
+          if(Bluefruit.connected()) bleNotifyLine(eventStr);
+      } else candidate=false;
+  }
+
+  // --- 오프 트리거 ---
+  if(diff<TH_OFF){
+      if(offBelowSince==0) offBelowSince=now;
+      if(chewing && (now-offBelowSince>=OFF_HOLD_MS)) chewing=false;
+  } else offBelowSince=0;
+
+  // --- 파형 디버그 ---
+#if DEBUG_WAVE
+  static uint32_t p=0;
+  if(now-p>20){ p=now;
+      Serial.print(resistance2); Serial.print(',');
+      Serial.print(emaFast); Serial.print(',');
+      Serial.print(emaSlow); Serial.print(',');
+      Serial.println(diff);
+  }
+#endif
+  delay(10);
+}
