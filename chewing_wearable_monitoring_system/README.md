@@ -3,7 +3,7 @@
 
 ---
 
-### 📌 프로젝트 개요
+###  프로젝트 개요
 - 턱에 착용하는 **장력(스트레인) 기반 웨어러블 센서**를 이용해 저작 활동을 직접 측정
 - **테이블 매트(식탁보) 형태 압력 센서**를 통해 음식 섭취량(무게 변화)을 계측하는 **이중 센싱 기반 모니터링 시스템** 개발
 - 센서 데이터를 실시간으로 수집하여 **모바일 어플리케이션에서 저작 횟수, 저작 속도, 섭취량을 시각화**
@@ -11,30 +11,30 @@
 
 ---
 
-### 🛠 사용 기술
+###  사용 기술
 
-#### 🔧 Sensor / Hardware
+####  Sensor / Hardware
 - 턱 착용형 장력 센서(저항 변화 기반)를 이용해 저작 시 발생하는 근육 움직임 측정
 - 테이블 매트 형태 압력 센서를 이용한 음식 무게 변화 측정
 - MCU 기반 ADC 샘플링 및 센서 데이터 수집
 - BLE 통신을 통한 모바일 어플리케이션 데이터 전송
 
-#### 🧩 PCB Design
+####  PCB Design
 - **ALTIUM Designer**를 활용한 센서 인터페이스 PCB 설계
 - 센서 신호 수집을 위한 회로 레이아웃 및 배선 설계
 
-#### ⚙ Firmware
+####  Firmware
 - 센서 데이터 실시간 샘플링 및 전처리
 - 이동 평균 기반 노이즈 제거
 - 임계값 기반 저작 이벤트 검출 및 카운팅
 
-#### 💻 Algorithm / Data Processing
+####  Algorithm / Data Processing
 - Python 기반 신호 처리 및 데이터 분석
 - Moving Average / EWMA 필터 적용
 - 피크 검출 기반 저작 이벤트 분리
 - 저작 속도 및 저작 패턴 분석
 
-#### 📱 Application
+####  Application
 - 센서 데이터 실시간 수신 및 시각화
 - 저작 횟수 및 섭취량 모니터링 UI 구현
 - 사용자 식습관 모니터링 피드백 제공
@@ -50,3 +50,21 @@
 ---
 
 ### 📂 Repository Structure
+- chewing_wearable_monitoring_system/
+- algorithm/ : 저작 검출 및 신호 처리 알고리즘 코드
+- docs/ : 논문 및 관련 문서
+- presentation/ : 프로젝트 발표자료
+- report/ : 결과 보고서
+- README.md
+
+
+---
+
+### 📎 자료 링크
+- 📊 발표자료 : `presentation/`
+- 📄 결과 보고서 : `report/`
+
+---
+
+### 👩‍💻 Author
+GitHub : https://github.com/wayoon-03
