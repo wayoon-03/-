@@ -51,12 +51,10 @@
 
 ### 📂 Repository Structure
 
-- 📁 [chewing_wearable_monitoring_system](./)
-- 📁 [algorithm](./algorithm/) : 저작 검출 및 신호 처리 알고리즘 코드
-- 📁 [docs](./docs/) : 논문 및 관련 문서
-- 📁 [presentation](./presentation/) : 프로젝트 발표자료
-- 📁 [report](./report/) : 결과 보고서
-- 📄 [README.md](./README.md)
+-  [algorithm](./algorithm/) : 저작 검출 및 신호 처리 알고리즘 코드
+-  [docs](./docs/) : 논문 및 관련 문서
+-  [presentation](./presentation/) : 프로젝트 발표자료
+-  [report](./report/) : 결과 보고서
 
 
 ---
