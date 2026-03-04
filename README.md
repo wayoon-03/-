@@ -25,7 +25,7 @@
 - 4-layer PCB 설계
 
 📂 Project Folder  
-electrochemical_readout_circuit/
+[chewing_wearable_monitoring_system](chewing_wearable_monitoring_system/)
 
 
 ---
@@ -39,8 +39,7 @@ electrochemical_readout_circuit/
 - 어플리케이션 기반 데이터 시각화
 
 📂 Project Folder  
-chewing_wearable_monitoring_system/
-
+[chewing_wearable_monitoring_system](chewing_wearable_monitoring_system/)
 
 ---
 
