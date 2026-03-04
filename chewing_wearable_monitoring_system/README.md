@@ -1,4 +1,4 @@
-## 🍽 Chewing Wearable Monitoring System
+##  Chewing Wearable Monitoring System
 저작 웨어러블 모니터링 장비 및 어플리케이션 개발
 
 ---
@@ -41,7 +41,7 @@
 
 ---
 
-### 🚀 성과
+### 성과
 - 신호 필터링 적용을 통해 **저작 신호 노이즈 약 30% 감소**
 - 턱 착용형 센서를 활용한 **직접 측정 방식으로 저작 이벤트 검출 안정성 확보**
 - 압력 센서를 결합하여 **음식 섭취량(무게 변화) 측정 기능 구현**
@@ -56,14 +56,3 @@
 -  [presentation](./presentation/) : 프로젝트 발표자료
 -  [report](./report/) : 결과 보고서
 
-
----
-
-### 📎 자료 링크
-- 📊 발표자료 : `presentation/`
-- 📄 결과 보고서 : `report/`
-
----
-
-### 👩‍💻 Author
-GitHub : https://github.com/wayoon-03
