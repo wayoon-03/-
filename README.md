@@ -1,37 +1,49 @@
- #전기화학센서 계측용 소형 리드아웃 회로
+# Biomedical & Embedded Systems Projects
 
- 프로젝트 개요
-- 바이오센서(전기화학센서)의 미세 신호를 안정적으로 계측하기 위해 소형 리드아웃 회로를 개발
-- FPGA 기반 파형 생성 및 제어, TIA·ADC 기반 신호 증폭 및 변환, 소형 4-layer PCB 설계 수행
+전자회로, FPGA 기반 신호처리 및 바이오센서 계측 시스템 개발 프로젝트를 정리한 저장소입니다.
 
-
-
- 사용 기술
-- 회로 시뮬레이션: PSPICE, LTSPICE
-- PCB 설계: PADS, 4-layer 설계
-- FPGA/HDL: Verilog, Vivado (UART, RAMP, ADC 제어 모듈 구현)
-- 데이터 처리: Python (Moving Average, EWMA 필터 적용)
+센서 신호 계측 회로 설계, FPGA 제어 로직 구현, 데이터 필터링 알고리즘 개발을 중심으로 프로젝트를 수행했습니다.
 
 
-성과
-- 신호 잡음30% 감소 및 전기화학센서 산화 환원 임피던스 측정 (Moving Average + EWMA 필터 적용)
-- 저전력 특성 확보 및 안정적인 계측 성능 달성
-- 학술대회 발표: 2025 한국정보기술학회 하계 학술대회 포스터 발표
+## Tech Stack
+
+- FPGA / HDL : Verilog, Vivado
+- Circuit Design : PSPICE, LTSPICE
+- PCB Design : PADS (4-layer)
+- Embedded System : Arduino, Sensor Interface
+- Data Processing : Python (Signal Filtering)
 
 
-📂 Repository Structure
-- `vivado code/` : Verilog 소스코드,
-- `python code/` 데이터 처리 코드
-- `docs/` : 논문 PDF, 포스터, 발표 자료
-- `pcb/` : PADS PCB 설계 파일
+## Projects
+
+### Electrochemical Sensor Readout Circuit
+바이오센서의 미세 전기화학 신호를 안정적으로 측정하기 위한 소형 리드아웃 회로 개발
+
+- FPGA 기반 파형 생성 및 제어
+- TIA + ADC 기반 신호 계측 시스템
+- Python 기반 데이터 필터링 (Moving Average, EWMA)
+- 4-layer PCB 설계
+
+📂 Project Folder  
+electrochemical_readout_circuit/
 
 
- 📎 자료 링크
-- [논문 PDF](docs/kics_paper.pdf)  
-- [최종 포스터 PDF](docs/final_poster.pdf)  
-- [발표자료 PPT](docs/readout_circuit_presentation.pdf)
+---
 
- Contact
-- GitHub : https://github.com/wayoon-03
-- GitHub: [코드 저장소 바로가기](https://github.com/wayoon-03/-/tree/main)
+### Chewing Wearable Monitoring System
+턱 착용형 장력 센서를 이용한 저작 활동 모니터링 웨어러블 시스템 개발
 
+- 저작 활동 센싱 웨어러블 장치 설계
+- 센서 데이터 기반 저작 이벤트 검출 알고리즘 개발
+- 음식 섭취량 측정을 위한 압력 센서 시스템
+- 어플리케이션 기반 데이터 시각화
+
+📂 Project Folder  
+chewing_wearable_monitoring_system/
+
+
+---
+
+## Author
+
+GitHub : https://github.com/wayoon-03
