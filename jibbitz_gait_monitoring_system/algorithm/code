@@ -1,0 +1,97 @@
+#include <ArduinoBLE.h>
+#include <Arduino_BMI270_BMM150.h>
+
+// Yaw 데이터 관련 변수
+float yawAngle = 0;                  // 현재 Yaw 각도
+float baselineYaw = 0;               // Yaw 기준 값
+bool isBaselineSet = false;          // 기준 값 설정 여부
+const float driftThreshold = 0.05;   // 드리프트 기준
+const float yawDriftThreshold = 0.1; // 잡음 제거를 위한 임계값
+const unsigned long samplingInterval = 100; // 샘플링 주기(ms)
+const float smoothingFactor = 0.9;   // 필터링 요소
+const unsigned long baselineDuration = 6000; // 기준값 설정을 위한 시간 (6초)
+
+// BLE 서비스 및 특성 정의 (사용자 정의 UUID)
+BLEService yawService("0b060040-7e5b-443d-a7cf-c815c4e2418d");  // 사용자 정의 서비스 UUID
+BLECharacteristic yawCharacteristic("00002902-0000-1000-8000-00805f9b34fb", BLERead | BLENotify, sizeof(float)); // BLE 특성 설정
+
+unsigned long startTime = 0; // 기준값 설정 시작 시간
+
+void setup() {
+  Serial.begin(9600); // 시리얼 통신 시작
+
+  // BLE 초기화
+  if (!BLE.begin()) {
+    
+    while (1); // BLE 초기화 실패 시 멈춤
+  }
+
+  BLE.setLocalName("gait_angle");             // BLE 디바이스 이름 설정
+  BLE.setAdvertisedService(yawService);      // BLE 서비스 등록
+  yawService.addCharacteristic(yawCharacteristic);
+  BLE.addService(yawService);
+  BLE.advertise();                           // BLE 광고 시작
+  Serial.println("BLE initialization complete");
+
+  // IMU 초기화
+  if (!IMU.begin()) {
+    
+    while (1); // IMU 초기화 실패 시 멈춤
+  }
+  
+}
+
+void loop() {
+  BLEDevice central = BLE.central(); // Central 장치 연결 확인
+
+  if (central) {
+    
+    startTime = millis(); // 기준값 설정 시작 시간 초기화
+    unsigned long previousTime = millis();
+
+    while (central.connected()) {
+      float gX, gY, gZ;
+      unsigned long currentTime = millis();
+      float deltaTime = (currentTime - previousTime) / 1000.0;
+
+      if (IMU.gyroscopeAvailable()) {
+        IMU.readGyroscope(gX, gY, gZ);
+
+        // Yaw 데이터 업데이트
+        if (abs(gZ) > yawDriftThreshold) {
+          yawAngle = smoothingFactor * yawAngle + (1.0 - smoothingFactor) * (yawAngle + gZ * deltaTime);
+        }
+
+        // 드리프트 보정
+        if (abs(yawAngle) < driftThreshold) yawAngle = 0;
+
+        // 기준값 설정 (6초 동안 Yaw 값 측정 후 기준값 설정)
+        if (!isBaselineSet && (currentTime - startTime >= baselineDuration)) {
+          baselineYaw = yawAngle; // 현재 Yaw 값을 기준값으로 설정
+          isBaselineSet = true;
+          
+        }
+
+        // 기준값에 따른 보정
+        float correctedYaw = yawAngle - baselineYaw;
+
+        // 추가 보정값 적용
+        float finalYaw = correctedYaw * 0.833 * 2 * 5.844;
+
+        // Serial로 보정된 Yaw 값 출력
+        Serial.println(finalYaw);
+
+        // BLE 특성을 통해 Yaw 데이터 송신
+        byte yawData[sizeof(float)];
+        memcpy(yawData, &finalYaw, sizeof(float));
+        yawCharacteristic.writeValue(yawData, sizeof(float));
+
+        previousTime = currentTime;
+        delay(samplingInterval); // 데이터 송신 간격
+      }
+    }
+    
+  }
+}
+
+
