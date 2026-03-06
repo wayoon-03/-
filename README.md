@@ -42,7 +42,16 @@
 [chewing_wearable_monitoring_system](chewing_wearable_monitoring_system/)
 
 ---
+### Jibbitz-type Gait Monitoring System
+크록스 액세서리(지비츠) 형태의 센서 모듈을 활용한 어린이 보행 모니터링 시스템 개발
 
+- 지비츠 형태의 BLE 기반 무선 센서 모듈 설계
+- 자이로/가속도 센서 기반 발 각도 계산 및 보행 판별
+- 지수평활 필터 기반 노이즈 제거
+- 스마트폰 앱 연동 및 GUI 시각화
+
+📂 Project Folder  
+---
 ## Author
 
 GitHub : https://github.com/wayoon-03
