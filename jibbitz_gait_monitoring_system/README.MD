@@ -92,9 +92,8 @@ if(abs(yawAngle) < threshold) yawAngle = 0
 # Tech Stack
 
 Embedded System  
-- Arduino
-- ArduinoBLE
-- Arduino BMI270 IMU
+- BLE
+- BMI270 IMU
 
 Sensor  
 - IMU (Gyroscope)
